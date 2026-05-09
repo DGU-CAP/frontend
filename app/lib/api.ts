@@ -6,12 +6,22 @@ import type {
   MetricPoint,
   Ticket,
   TicketActionLog,
-  TicketMetricSnapshot,
+  TicketDetail,
+  UpdateStatusRequest,
 } from "./types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
 
 const api = axios.create({ baseURL: BASE_URL });
+
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    const message =
+      err.response?.data?.message ?? err.message ?? "알 수 없는 오류가 발생했습니다";
+    return Promise.reject(new Error(message));
+  }
+);
 
 export async function getPods(namespace?: string): Promise<PodInfo[]> {
   const { data } = await api.get("/pods", {
@@ -71,19 +81,14 @@ export async function getTickets(
   return data;
 }
 
-export async function getTicket(id: number | string): Promise<Ticket> {
+export async function getTicket(id: number | string): Promise<TicketDetail> {
   const { data } = await api.get(`/tickets/${id}`);
   return data;
 }
 
 export async function updateTicketStatus(
   id: number | string,
-  body: {
-    status: string;
-    action: string;
-    memo: string;
-    performedBy: string;
-  }
+  body: UpdateStatusRequest
 ): Promise<Ticket> {
   const { data } = await api.patch(`/tickets/${id}/status`, body);
   return data;
@@ -93,12 +98,5 @@ export async function getTicketLogs(
   id: number | string
 ): Promise<TicketActionLog[]> {
   const { data } = await api.get(`/tickets/${id}/logs`);
-  return data;
-}
-
-export async function getTicketMetricSnapshot(
-  id: number | string
-): Promise<TicketMetricSnapshot> {
-  const { data } = await api.get(`/tickets/${id}/metrics`);
   return data;
 }

@@ -7,6 +7,7 @@ import { getTickets } from "../lib/api";
 import { useAlertStore } from "../store/useAlertStore";
 import type { Severity, TicketStatus } from "../lib/types";
 import { Card, CardContent } from "../../components/ui/card";
+import AlertBanner from "../components/AlertBanner";
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import {
   Select,
@@ -107,12 +108,10 @@ export default function TicketsPage() {
       <h1 className="text-2xl font-bold text-white">티켓</h1>
 
       {hasNewTicket && (
-        <button
-          onClick={handleNewTicketBannerClick}
-          className="w-full bg-blue-900 border border-blue-700 text-blue-200 text-sm rounded-lg p-3 hover:bg-blue-800 transition-colors text-left"
-        >
-          새 티켓이 있습니다. 클릭하여 새로고침
-        </button>
+        <AlertBanner
+          onRefresh={refetch}
+          onClose={() => setHasNewTicket(false)}
+        />
       )}
 
       {isError && (
