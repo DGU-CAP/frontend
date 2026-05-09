@@ -121,8 +121,11 @@ export default function DashboardPage() {
 
             <Card className="bg-gray-900 border-gray-800">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-gray-400 font-normal">
+                <CardTitle className="text-sm text-gray-400 font-normal flex items-center gap-2">
                   CRITICAL 티켓
+                  {criticalCount > 0 && (
+                    <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -175,8 +178,8 @@ export default function DashboardPage() {
               <TableHeader>
                 <TableRow className="border-gray-800">
                   <TableHead className="text-gray-400">번호</TableHead>
-                  <TableHead className="text-gray-400">제목</TableHead>
                   <TableHead className="text-gray-400">Pod</TableHead>
+                  <TableHead className="text-gray-400">이상유형</TableHead>
                   <TableHead className="text-gray-400">심각도</TableHead>
                   <TableHead className="text-gray-400">상태</TableHead>
                   <TableHead className="text-gray-400">생성일</TableHead>
@@ -202,11 +205,11 @@ export default function DashboardPage() {
                       <TableCell className="text-gray-300 font-mono text-xs">
                         {ticket.ticketNumber}
                       </TableCell>
-                      <TableCell className="text-white text-sm">
-                        {ticket.title}
-                      </TableCell>
                       <TableCell className="text-gray-300 text-sm">
                         {ticket.podName}
+                      </TableCell>
+                      <TableCell className="text-gray-300 text-xs">
+                        {ticket.anomalyType}
                       </TableCell>
                       <TableCell>
                         <SeverityBadge severity={ticket.severity} />

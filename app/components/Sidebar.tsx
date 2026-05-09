@@ -16,8 +16,9 @@ export default function Sidebar() {
   return (
     <aside className="w-56 shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col">
       <div className="h-16 flex items-center px-6 border-b border-gray-800">
-        <span className="text-white font-bold text-lg tracking-tight">
-          DGU-CAP
+        <span className="font-bold text-lg tracking-tight">
+          <span className="text-green-400">DGU</span>
+          <span className="text-white">-CAP</span>
         </span>
       </div>
       <nav className="flex-1 py-4 px-3 space-y-1">
