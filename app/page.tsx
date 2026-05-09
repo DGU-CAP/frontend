@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { getPods, getTickets } from "./lib/api";
 import { useAlertStore } from "./store/useAlertStore";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
 import {
   Table,
   TableBody,
@@ -69,13 +68,13 @@ export default function DashboardPage() {
     data: pods,
     isLoading: podsLoading,
     isError: podsError,
-  } = useQuery({ queryKey: ["pods"], queryFn: () => getPods() });
+  } = useQuery({ queryKey: ["pods"], queryFn: () => getPods(), refetchInterval: 30000 });
 
   const {
     data: tickets,
     isLoading: ticketsLoading,
     isError: ticketsError,
-  } = useQuery({ queryKey: ["tickets"], queryFn: () => getTickets() });
+  } = useQuery({ queryKey: ["tickets"], queryFn: () => getTickets(), refetchInterval: 30000 });
 
   const criticalCount =
     tickets?.filter((t) => t.severity === "CRITICAL").length ?? 0;

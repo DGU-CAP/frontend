@@ -45,12 +45,6 @@ export interface TicketMetricSnapshot {
   capturedAt: string;
 }
 
-export interface ContainerInfo {
-  name: string;
-  image: string;
-  ready: boolean;
-}
-
 export interface PodInfo {
   podName: string;
   namespace: string;
@@ -58,7 +52,7 @@ export interface PodInfo {
   phase: string;
   ready: boolean;
   restartCount: number;
-  containers: ContainerInfo[];
+  containers: string[];
 }
 
 export interface PodEvent {
@@ -84,4 +78,17 @@ export interface MetricPoint {
 export interface AlertEvent {
   podName: string;
   anomalyType: AnomalyType;
+}
+
+export interface UpdateStatusRequest {
+  status: TicketStatus;
+  action: string;
+  memo: string;
+  performedBy: string;
+}
+
+export interface TicketDetail {
+  ticket: Ticket;
+  metricSnapshot: TicketMetricSnapshot | null;
+  actionLogs: TicketActionLog[];
 }
