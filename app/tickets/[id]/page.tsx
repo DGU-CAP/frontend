@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Ticket } from "../../lib/types";
+import type { TicketDetail, TicketStatus } from "../../lib/types";
 import { useParams } from "next/navigation";
-import { getTicket, getTicketLogs, updateTicketStatus } from "../../lib/api";
-import type { TicketStatus } from "../../lib/types";
+import { getTicket, updateTicketStatus } from "../../lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import {
   Select,
@@ -55,25 +54,24 @@ export default function TicketDetailPage() {
   const [performedBy, setPerformedBy] = useState("");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const { data: ticket, isLoading, isError } = useQuery<Ticket>({
+  const { data, isLoading, isError } = useQuery<TicketDetail>({
     queryKey: ["ticket", id],
     queryFn: () => getTicket(id),
   });
 
-  const status = statusOverride ?? ticket?.status ?? "OPEN";
+  const ticket = data?.ticket;
+  const metricSnapshot = data?.metricSnapshot;
+  const actionLogs = data?.actionLogs ?? [];
 
-  const { data: logs } = useQuery({
-    queryKey: ["ticket-logs", id],
-    queryFn: () => getTicketLogs(id),
-  });
+  const status = statusOverride ?? ticket?.status ?? "OPEN";
 
   const mutation = useMutation({
     mutationFn: () =>
       updateTicketStatus(id, { status, action, memo, performedBy }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ticket", id] });
-      queryClient.invalidateQueries({ queryKey: ["ticket-logs", id] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      setStatusOverride(null);
       setAction("");
       setMemo("");
       setPerformedBy("");
@@ -191,7 +189,7 @@ export default function TicketDetailPage() {
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "CPU", value: `${ticket.metricValue ?? "-"}%` },
+                  { label: "CPU", value: metricSnapshot ? `${metricSnapshot.cpu}%` : `${ticket.metricValue ?? "-"}%` },
                   { label: "Threshold", value: `${ticket.threshold ?? "-"}%` },
                   { label: "Severity", value: ticket.severity },
                   { label: "Assignee", value: ticket.assigneeName || "-" },
@@ -277,11 +275,11 @@ export default function TicketDetailPage() {
               <CardTitle className="text-sm text-gray-400">조치 이력</CardTitle>
             </CardHeader>
             <CardContent>
-              {!logs || logs.length === 0 ? (
+              {actionLogs.length === 0 ? (
                 <p className="text-sm text-gray-500">이력이 없습니다</p>
               ) : (
                 <ol className="relative border-l border-gray-700 space-y-4 ml-2">
-                  {logs.map((log) => (
+                  {actionLogs.map((log) => (
                     <li key={log.id} className="ml-4">
                       <span className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-blue-500" />
                       <p className="text-xs text-gray-400">
