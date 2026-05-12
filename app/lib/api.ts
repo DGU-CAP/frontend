@@ -5,9 +5,8 @@ import type {
   CurrentMetric,
   MetricPoint,
   Ticket,
-  TicketActionLog,
   TicketDetail,
-  UpdateStatusRequest,
+  TicketActionLog,
 } from "./types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
@@ -35,13 +34,6 @@ export async function getPodEvents(
   namespace?: string
 ): Promise<PodEvent[]> {
   const { data } = await api.get(`/pods/${podName}/events`, {
-    params: namespace ? { namespace } : undefined,
-  });
-  return data;
-}
-
-export async function getTopology(namespace?: string): Promise<unknown> {
-  const { data } = await api.get("/topology", {
     params: namespace ? { namespace } : undefined,
   });
   return data;
@@ -88,7 +80,12 @@ export async function getTicket(id: number | string): Promise<TicketDetail> {
 
 export async function updateTicketStatus(
   id: number | string,
-  body: UpdateStatusRequest
+  body: {
+    status: string;
+    action: string;
+    memo: string;
+    performedBy: string;
+  }
 ): Promise<Ticket> {
   const { data } = await api.patch(`/tickets/${id}/status`, body);
   return data;

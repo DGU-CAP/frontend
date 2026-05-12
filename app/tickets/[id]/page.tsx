@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams, useRouter } from "next/navigation";
-import { getTicket, getTicketLogs, updateTicketStatus } from "../../lib/api";
-import type { TicketStatus } from "../../lib/types";
+import type { TicketDetail, TicketStatus } from "../../lib/types";
+import { useParams } from "next/navigation";
+import { getTicket, updateTicketStatus } from "../../lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import {
   Select,
@@ -15,34 +15,18 @@ import {
 } from "../../../components/ui/select";
 import { Button } from "../../../components/ui/button";
 
-const STATUS_OPTIONS: TicketStatus[] = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"];
+const STATUS_OPTIONS: TicketStatus[] = [
+  "OPEN",
+  "IN_PROGRESS",
+  "RESOLVED",
+  "CLOSED",
+];
 
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="flex gap-2 text-sm">
       <span className="text-gray-400 w-28 shrink-0">{label}</span>
       <span className="text-white break-all">{value ?? "-"}</span>
-    </div>
-  );
-}
-
-function MetricCell({
-  label,
-  value,
-  unit = "%",
-  warn,
-}: {
-  label: string;
-  value: number | null | undefined;
-  unit?: string;
-  warn?: boolean;
-}) {
-  return (
-    <div className="bg-gray-800 rounded p-3">
-      <p className="text-xs text-gray-400">{label}</p>
-      <p className={`text-lg font-bold mt-1 ${warn ? "text-red-400" : "text-white"}`}>
-        {value != null ? `${value}${unit}` : "-"}
-      </p>
     </div>
   );
 }
@@ -61,40 +45,33 @@ function Toast({ message, type }: { message: string; type: "success" | "error" }
 
 export default function TicketDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params.id as string;
   const queryClient = useQueryClient();
 
-  const [status, setStatus] = useState<TicketStatus>("OPEN");
+  const [statusOverride, setStatusOverride] = useState<TicketStatus | null>(null);
   const [action, setAction] = useState("");
   const [memo, setMemo] = useState("");
   const [performedBy, setPerformedBy] = useState("");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const { data: detail, isLoading, isError } = useQuery({
+  const { data, isLoading, isError } = useQuery<TicketDetail>({
     queryKey: ["ticket", id],
     queryFn: () => getTicket(id),
   });
 
-  const ticket = detail?.ticket;
-  const snapshot = detail?.metricSnapshot;
+  const ticket = data?.ticket;
+  const metricSnapshot = data?.metricSnapshot;
+  const actionLogs = data?.actionLogs ?? [];
 
-  useEffect(() => {
-    if (ticket) setStatus(ticket.status);
-  }, [ticket]);
-
-  const { data: logs } = useQuery({
-    queryKey: ["ticket-logs", id],
-    queryFn: () => getTicketLogs(id),
-  });
+  const status = statusOverride ?? ticket?.status ?? "OPEN";
 
   const mutation = useMutation({
     mutationFn: () =>
       updateTicketStatus(id, { status, action, memo, performedBy }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ticket", id] });
-      queryClient.invalidateQueries({ queryKey: ["ticket-logs", id] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      setStatusOverride(null);
       setAction("");
       setMemo("");
       setPerformedBy("");
@@ -136,17 +113,9 @@ export default function TicketDetailPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => router.back()}
-          className="text-gray-400 hover:text-white text-sm transition-colors"
-        >
-          ← 뒤로
-        </button>
-        <h1 className="text-2xl font-bold text-white">
-          [{ticket.ticketNumber}] {ticket.title}
-        </h1>
-      </div>
+      <h1 className="text-2xl font-bold text-white">
+        [{ticket.ticketNumber}] {ticket.title}
+      </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* 왼쪽 영역 */}
@@ -218,19 +187,19 @@ export default function TicketDetailPage() {
               <CardTitle className="text-sm text-gray-400">메트릭 스냅샷</CardTitle>
             </CardHeader>
             <CardContent>
-              {snapshot ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <MetricCell label="CPU" value={snapshot.cpu} warn={snapshot.cpu > 90} />
-                  <MetricCell label="메모리" value={snapshot.memory} warn={snapshot.memory > 85} />
-                  <MetricCell label="재시작" value={snapshot.restarts} unit="회" warn={snapshot.restarts >= 3} />
-                  <MetricCell label="에러율" value={snapshot.errorRate} warn={snapshot.errorRate > 10} />
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <MetricCell label="감지 값" value={ticket.metricValue} warn={ticket.metricValue > ticket.threshold} />
-                  <MetricCell label="임계치" value={ticket.threshold} />
-                </div>
-              )}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "CPU", value: metricSnapshot ? `${metricSnapshot.cpu}%` : `${ticket.metricValue ?? "-"}%` },
+                  { label: "Threshold", value: `${ticket.threshold ?? "-"}%` },
+                  { label: "Severity", value: ticket.severity },
+                  { label: "Assignee", value: ticket.assigneeName || "-" },
+                ].map(({ label, value }) => (
+                  <div key={label} className="bg-gray-800 rounded p-3">
+                    <p className="text-xs text-gray-400">{label}</p>
+                    <p className="text-lg font-bold text-white mt-1">{value}</p>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
@@ -241,7 +210,10 @@ export default function TicketDetailPage() {
             <CardContent className="space-y-3">
               <div className="space-y-1">
                 <label className="text-xs text-gray-400">상태</label>
-                <Select value={status} onValueChange={(v) => setStatus(v as TicketStatus)}>
+                <Select
+                  value={status}
+                  onValueChange={(v) => setStatusOverride(v as TicketStatus)}
+                >
                   <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-200">
                     <SelectValue />
                   </SelectTrigger>
@@ -303,11 +275,11 @@ export default function TicketDetailPage() {
               <CardTitle className="text-sm text-gray-400">조치 이력</CardTitle>
             </CardHeader>
             <CardContent>
-              {!logs || logs.length === 0 ? (
+              {actionLogs.length === 0 ? (
                 <p className="text-sm text-gray-500">이력이 없습니다</p>
               ) : (
                 <ol className="relative border-l border-gray-700 space-y-4 ml-2">
-                  {logs.map((log) => (
+                  {actionLogs.map((log) => (
                     <li key={log.id} className="ml-4">
                       <span className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-blue-500" />
                       <p className="text-xs text-gray-400">
