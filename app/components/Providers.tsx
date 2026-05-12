@@ -9,7 +9,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     () =>
       new QueryClient({
         defaultOptions: {
-          queries: { retry: 1, refetchOnWindowFocus: false },
+          queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 30_000 },
         },
       })
   );
