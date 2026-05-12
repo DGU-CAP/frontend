@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Ticket } from "../../lib/types";
 import { useParams } from "next/navigation";
@@ -49,7 +49,7 @@ export default function TicketDetailPage() {
   const id = params.id as string;
   const queryClient = useQueryClient();
 
-  const [status, setStatus] = useState<TicketStatus>("OPEN");
+  const [statusOverride, setStatusOverride] = useState<TicketStatus | null>(null);
   const [action, setAction] = useState("");
   const [memo, setMemo] = useState("");
   const [performedBy, setPerformedBy] = useState("");
@@ -60,9 +60,7 @@ export default function TicketDetailPage() {
     queryFn: () => getTicket(id),
   });
 
-  useEffect(() => {
-    if (ticket) setStatus(ticket.status);
-  }, [ticket]);
+  const status = statusOverride ?? ticket?.status ?? "OPEN";
 
   const { data: logs } = useQuery({
     queryKey: ["ticket-logs", id],
@@ -216,7 +214,7 @@ export default function TicketDetailPage() {
                 <label className="text-xs text-gray-400">상태</label>
                 <Select
                   value={status}
-                  onValueChange={(v) => setStatus(v as TicketStatus)}
+                  onValueChange={(v) => setStatusOverride(v as TicketStatus)}
                 >
                   <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-200">
                     <SelectValue />

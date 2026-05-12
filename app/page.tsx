@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { getPods, getTickets } from "./lib/api";
 import { useAlertStore } from "./store/useAlertStore";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
 import {
   Table,
   TableBody,
