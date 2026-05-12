@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAlertStore } from "../store/useAlertStore";
 
 const SSE_URL =
@@ -12,6 +13,7 @@ export default function SseProvider({
   children: React.ReactNode;
 }) {
   const addAlert = useAlertStore((s) => s.addAlert);
+  const queryClient = useQueryClient();
   const esRef = useRef<EventSource | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -28,11 +30,17 @@ export default function SseProvider({
     });
 
     es.addEventListener("TICKET_UPDATED", (e) => {
-      console.log("[SSE] TICKET_UPDATED", e.data);
+      try {
+        const { ticketId } = JSON.parse(e.data) as { ticketId: number; status: string };
+        queryClient.invalidateQueries({ queryKey: ["tickets"] });
+        queryClient.invalidateQueries({ queryKey: ["ticket", String(ticketId)] });
+      } catch {
+        queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      }
     });
 
-    es.addEventListener("POD_STATUS", (e) => {
-      console.log("[SSE] POD_STATUS", e.data);
+    es.addEventListener("POD_STATUS", () => {
+      queryClient.invalidateQueries({ queryKey: ["pods"] });
     });
 
     es.onerror = () => {

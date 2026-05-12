@@ -18,6 +18,12 @@ type RangeType = "30m" | "1h" | "6h" | "24h";
 
 const RANGES: RangeType[] = ["30m", "1h", "6h", "24h"];
 
+const LINE_COLOR: Record<MetricType, string> = {
+  cpu: "#60a5fa",
+  memory: "#34d399",
+  "error-rate": "#f87171",
+};
+
 interface Props {
   podName: string;
   metric: MetricType;
@@ -40,6 +46,8 @@ export default function MetricChart({ podName, metric }: Props) {
     time: formatTime(p.timestamp),
     value: p.value,
   }));
+
+  const isEmpty = !isLoading && !isError && (!chartData || chartData.length === 0);
 
   return (
     <div className="space-y-3">
@@ -69,7 +77,13 @@ export default function MetricChart({ podName, metric }: Props) {
         </div>
       )}
 
-      {!isLoading && !isError && (
+      {isEmpty && (
+        <div className="h-48 flex items-center justify-center text-gray-500 text-sm bg-gray-800 rounded">
+          데이터 없음
+        </div>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -79,6 +93,7 @@ export default function MetricChart({ podName, metric }: Props) {
               tickLine={false}
             />
             <YAxis
+              domain={[0, 100]}
               tick={{ fill: "#9ca3af", fontSize: 11 }}
               tickLine={false}
               tickFormatter={(v) => `${v}%`}
@@ -97,7 +112,7 @@ export default function MetricChart({ podName, metric }: Props) {
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#60a5fa"
+              stroke={LINE_COLOR[metric]}
               strokeWidth={2}
               dot={false}
             />

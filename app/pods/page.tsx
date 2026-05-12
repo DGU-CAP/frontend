@@ -23,15 +23,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/ta
 import MetricChart from "../components/MetricChart";
 
 function PhaseBadge({ phase }: { phase: string }) {
-  const isRunning = phase === "Running";
+  const style =
+    phase === "Running"
+      ? "bg-green-900 text-green-300"
+      : phase === "Pending"
+      ? "bg-yellow-900 text-yellow-300"
+      : "bg-red-900 text-red-300";
   return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-        isRunning
-          ? "bg-green-900 text-green-300"
-          : "bg-red-900 text-red-300"
-      }`}
-    >
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${style}`}>
       {phase}
     </span>
   );
@@ -43,6 +42,7 @@ export default function PodsPage() {
   const { data: pods, isLoading, isError } = useQuery({
     queryKey: ["pods"],
     queryFn: () => getPods(),
+    refetchInterval: 30000,
   });
 
   return (
@@ -80,10 +80,7 @@ export default function PodsPage() {
               <TableBody>
                 {!pods || pods.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center text-gray-500 py-8"
-                    >
+                    <TableCell colSpan={6} className="text-center text-gray-500 py-8">
                       Pod가 없습니다
                     </TableCell>
                   </TableRow>
@@ -109,7 +106,11 @@ export default function PodsPage() {
                       <TableCell className="text-gray-300 text-sm">
                         {pod.ready ? "✓" : "✗"}
                       </TableCell>
-                      <TableCell className="text-gray-300 text-sm">
+                      <TableCell
+                        className={`text-sm font-medium ${
+                          pod.restartCount >= 3 ? "text-red-400" : "text-gray-300"
+                        }`}
+                      >
                         {pod.restartCount}
                       </TableCell>
                     </TableRow>
